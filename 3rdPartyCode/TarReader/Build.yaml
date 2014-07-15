@@ -1,0 +1,6 @@
+jar: JTar
+
+resources: 
+- doc|**.*
+- src|**.*
+- LICENSE

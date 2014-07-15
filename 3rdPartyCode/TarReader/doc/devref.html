@@ -1,0 +1,63 @@
+<html>
+<!-- $Id: devref.html,v 1.2 2000/06/16 04:40:58 time Exp $ -->
+<!-- Copyright (c) 1998 by Timothy Gerard Endres -->
+<!-- This is free software. Please refer to the file named -->
+<!-- 'LICENSE' or the file named 'License.html' for licensing details. -->
+
+<head>
+</head>
+
+<body>
+
+<h2>Java Tar Developer Reference</h2>
+
+The
+<a href="http://www.gjt.org/javadoc/com/ice/tar/package-summary.html">Java Tar pacakge</a>
+is written to be very similar to the
+<a href="http://www.gjt.org/apidoc/java/util/zip/package-summary.html">java.util.zip</a>
+package.
+
+<h2><a href="http://www.gjt.org/javadoc/com/ice/tar/TarEntry.html">TarEntry</a></h2>
+TarEntry objects are similar to
+<a href="http://www.gjt.org/apidoc/java/util/zip/ZipEntry.html">ZipEntry</a>
+objects. They represent an item in a tar archive.
+They come from a <code>TarInputStream.getNextEntry()</code>.
+
+<h2><a href="http://www.gjt.org/javadoc/com/ice/tar/TarHeader.html">TarHeader</a></h2>
+TarHeader objects are simply place holders (data structures) for the
+header information of a TarEntry. Methods are provided for
+parsing headers from tar archives, as well as generating
+headers from file information.
+
+<h2><a href="http://www.gjt.org/javadoc/com/ice/tar/TarInputStream.html">TarInputStream</a></h2>
+TarInputStream is a subclass of
+<a href="http://www.gjt.org/apidoc/java/io/FilterInputStream.html">FilterInputStream</a>.
+TarInputStream is very similar to
+<a href="http://www.gjt.org/apidoc/java/util/zip/ZipInputStream.html">ZipInputStream</a>
+in the way it presents the tar archive concept to you.
+
+<p>
+To read a tar archive, you open a TarInputStream, then loop
+using <code>getNextEntry()</code>, followed by a <code>read()</code> of
+the contents of the entry. The read method will return EOF (-1) at the
+end of each entry, at which time you loop to the next entry.
+
+
+<h2><a href="http://www.gjt.org/javadoc/com/ice/tar/TarBuffer.html">TarBuffer</a></h2>
+TarBuffer class is used to implement the blocked I/O of tar. This is done
+to ensure that Java Tar is as compatible as possible with other
+tar implementations.
+
+<hr>
+<a href="http://www.trustice.com/java/tar/">Home</a>
+<font SIZE="-2">
+<center>
+$Id: devref.html,v 1.2 2000/06/16 04:40:58 time Exp $<br>
+Authored By Timothy Gerard Endres, time@dotfile.com<br>
+This work been placed into the public domain.
+</center>
+</font>
+
+</body>
+
+</html>

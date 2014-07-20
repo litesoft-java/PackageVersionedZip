@@ -1,0 +1,12 @@
+onejar: PackageVersionedZip
+
+dependencies:
+- ../LiteSoftServerUtils
+
+classpath:
+- 3rdPartyCode|**.jar
+- ../LiteSoftServerUtils/libs|**.jar
+
+resources: 
+- LICENSE
+

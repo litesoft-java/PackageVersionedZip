@@ -102,10 +102,8 @@ package com.ice.tar;
  */
 
 public class TarEntry {
-    /**
-     * This is the entry's header information.
-     */
     protected TarHeader header;
+    private String updatedName;
 
     /**
      * The default constructor is protected for use only by subclasses.
@@ -125,20 +123,28 @@ public class TarEntry {
 
     /**
      * Get this entry's header.
-     *
-     * @return This entry's TarHeader.
      */
     public TarHeader getHeader() {
         return this.header;
     }
 
+    public TarHeader.TypeFlag getTypeFlag() {
+        return header.getTypeFlag();
+    }
+
+    public TarHeader.Action getAction() {
+        return header.getAction();
+    }
+
+    public void updateName( String pUpdatedName ) {
+        updatedName = pUpdatedName;
+    }
+
     /**
      * Get this entry's name.
-     *
-     * @return This entry's name.
      */
     public String getName() {
-        return header.getName();
+        return (updatedName != null) ? updatedName : header.getName();
     }
 
     /**

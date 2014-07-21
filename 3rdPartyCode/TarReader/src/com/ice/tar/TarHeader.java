@@ -24,10 +24,41 @@ import java.util.*;
  */
 public class TarHeader {
     public enum Type {
-        unix, // "old-unix" format - magic tag == ""
-        ustar, // 'ustar' format - magic tag representing a POSIX tar archive.
-        gnu // GNU 'ustar' format - magic tag representing a GNU tar archive: "ustar  " spaces???
+        unix { // "old-unix" format - magic tag == ""
+
+            @Override
+            public boolean isAcceptableMagicString( String pMagic ) {
+                return pMagic.length() == 0;
+            }
+        },
+        ustar { // 'ustar' format - magic tag representing a POSIX tar archive.
+
+            @Override
+            public boolean isAcceptableMagicString( String pMagic ) {
+                return pMagic.equals( "ustar" );
+            }
+        },
+        gnu { // GNU 'ustar' format - magic tag representing a GNU tar archive: "ustar  " spaces???
+
+            @Override
+            public boolean isAcceptableMagicString( String pMagic ) {
+                return pMagic.startsWith( "ustar" ) && (pMagic.length() > 5); // && headerBuf[262] != 0 && headerBuf[263] != 0
+            }
+        };
+
+        abstract public boolean isAcceptableMagicString( String pMagic );
+
+        public static Type getType( String pMagic ) {
+            for ( Type zType : values() ) {
+                if ( zType.isAcceptableMagicString( pMagic ) ) {
+                    return zType;
+                }
+            }
+            return null;
+        }
     }
+
+    public final Type format;
 
     // . . . . . . . . . . . . . . . . . . . . . . . . . . . . POSIX "ustar" Style Tar Header:
     //
@@ -70,79 +101,123 @@ public class TarHeader {
                                 _prefix
     };
 
-    public final Type format;
+    public enum Action {
+        Normal,
+        Directory,
+        Ignore,
+        ReportProceed,
+        ReportIgnore,
+        ReportExtended,
+        Extended,
+        Error;
 
-    /**
-     * The entry's name.
-     */
-    public String name = "";
-    /**
-     * The entry's permission mode.
-     */
-    public int mode;
-    /**
-     * The entry's user id.
-     */
-    public int userId;
-    /**
-     * The entry's group id.
-     */
-    public int groupId;
-    /**
-     * The entry's size.
-     */
-    public long size;
-    /**
-     * The entry's modification time.
-     */
-    public long modTime;
-    /**
-     * The entry's checksum.
-     */
-    public int checkSum;
-    /**
-     * The entry's link flag.
-     */
-    public byte linkFlag;
-    /**
-     * The entry's link name.
-     */
-    public String linkName = "";
-    /**
-     * The entry's magic tag.
-     */
-    public String magic = "";
-    /**
-     * The entry's user name.
-     */
-    public String userName = "";
-    /**
-     * The entry's group name.
-     */
-    public String groupName = "";
-    /**
-     * The entry's major device number.
-     */
-    public int devMajor;
-    /**
-     * The entry's minor device number.
-     */
-    public int devMinor;
+        public boolean isDirectory() {
+            return name().equals( "Directory" );
+        }
 
+        public boolean error() {
+            return name().contains( "Error" );
+        }
+
+        public boolean report() {
+            return name().contains( "Report" );
+        }
+
+        public boolean ignore() {
+            return name().contains( "Ignore" );
+        }
+
+        public boolean extended() {
+            return name().contains( "Extended" );
+        }
+    }
+
+    public enum TypeFlag {
+        Normal( Action.Normal, (char) 0, '0' ), // All formats
+        HardLink( '1' ), // All formats
+        SymLink( Action.Error, '2' ), // All formats BUT old GNU = reserved
+        CharacterSpecial( '3' ), // All but unix
+        BlockSpecial( '4' ), // All but unix
+        Directory( Action.Directory, '5' ), // All but unix
+        FIFO( '6' ), // All but unix
+        Contiguous( '7' ), // All but unix, & old GNU = reserved
+        GlobalExtendedHeader( Action.ReportExtended, 'g' ), // All but unix
+        ExtendedHeader( Action.ReportExtended, 'x' ), // All but unix
+        // A-Z vendor specific extensions
+        SolarisACL( 'A' ),
+        SolarisExtendedAttributeFile( Action.ReportExtended, 'E' ),
+        InodeOnly( 'I' ), // as in'star'
+        ObsoleteGNUfileNameTooLong( Action.ReportExtended, 'N' ), // for file names that do not fit into the main header.
+        POSIXeXtended( Action.ReportExtended, 'X' ), // POSIX 1003.1-2001 eXtended (VU version) AND Solaris extended Header
+        GNU_DumpDir( Action.Ignore, 'D' ), // This is a dir entry that contains the names of files that were in the dir at the time the dump was made.
+        GNU_LongLink( Action.ReportExtended, 'K' ), // Identifies the *next* file on the tape as having a long linkname.
+        GNU_LongName( Action.Extended, 'L' ), // Identifies the *next* file on the tape as having a long name.
+        GNU_MultiVol( Action.Error, 'M' ), // This is the continuation of a file that began on another volume.
+        GNU_Sparse( Action.Error, 'S' ), // This is for sparse files.
+        GNU_VolDeader( Action.Ignore, 'V' ); // This file is a tape/volume header.  Ignore it on extraction.
+
+        private final Action mAction;
+        private final byte[] mIdentifiers;
+
+        TypeFlag( Action pAction, char... pIdentifiers ) {
+            mAction = pAction;
+            mIdentifiers = new byte[pIdentifiers.length];
+            for ( int i = 0; i < pIdentifiers.length; i++ ) {
+                mIdentifiers[i] = (byte) pIdentifiers[i];
+            }
+        }
+
+        TypeFlag( char pIdentifier ) {
+            this( Action.ReportProceed, pIdentifier );
+        }
+
+        public Action getAction() {
+            return mAction;
+        }
+
+        private boolean isIdentifier( byte pIdentifier ) {
+            for ( byte zIdentifier : mIdentifiers ) {
+                if ( zIdentifier == pIdentifier ) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        public static TypeFlag find( byte pIdentifier ) {
+            for ( TypeFlag zTypeFlag : values() ) {
+                if ( zTypeFlag.isIdentifier( pIdentifier ) ) {
+                    return zTypeFlag;
+                }
+            }
+            return null;
+        }
+    }
+
+    private String name = "";
+    @SuppressWarnings({"FieldCanBeLocal", "UnusedDeclaration"}) private int permissionMode; // permission mode.
+    private int userId;
+    private int groupId;
+    private long size; // in bytes
+    private long modificationTime;
+    @SuppressWarnings({"FieldCanBeLocal", "UnusedDeclaration"}) private int checkSum;
+    private TypeFlag typeFlag;
+    @SuppressWarnings({"FieldCanBeLocal", "UnusedDeclaration"}) private String linkName = "";
+    private String userName = "";
+    private String groupName = "";
+    @SuppressWarnings({"FieldCanBeLocal", "UnusedDeclaration"}) private int devMajor; // major device number.
+    @SuppressWarnings({"FieldCanBeLocal", "UnusedDeclaration"}) private int devMinor; // minor device number.
+
+    @SuppressWarnings("UnusedDeclaration")
     public boolean isUnixTarFormat() {
         return format == Type.unix;
     }
 
-    /**
-     * Returns true if this entry's header is in "ustar" format.
-     */
     public boolean isUSTarFormat() {
         return format == Type.ustar;
     }
 
-    /**
-     * Returns true if this entry's header is in the GNU 'ustar' format.
-     */
+    @SuppressWarnings("UnusedDeclaration")
     public boolean isGNUTarFormat() {
         return format == Type.gnu;
     }
@@ -163,25 +238,17 @@ public class TarHeader {
             offset = zTHF.populate( offset, headerBuf );
         }
 
-        magic = _magic.asString();
-        if ( magic.equals( "" ) ) {
-            format = Type.unix;
-        } else if ( magic.equals( "ustar" ) ) {
-            format = Type.ustar;
-        } else if ( magic.startsWith( "ustar" ) ) { // && headerBuf[262] != 0 && headerBuf[263] != 0
-            format = Type.gnu;
-        } else {
-            throw new InvalidHeaderException( _magic.toString() );
+        if ( null == (format = Type.getType( _magic.asString() )) ) {
+            throw new InvalidHeaderException( "Unrecognized: " + _magic.toString() );
         }
 
         name = parseFileName( headerBuf );
-        mode = _mode.asIntOctal();
+        permissionMode = _mode.asIntOctal();
         userId = _uid.asIntOctal();
         groupId = _gid.asIntOctal();
         size = _size.asLongOctal();
-        modTime = _mtime.asLongOctal();
+        modificationTime = _mtime.asLongOctal();
         checkSum = _chksum.asIntOctal();
-        linkFlag = _typeflag.asByte();
         linkName = _linkname.asString();
 
         if ( isUSTarFormat() ) {
@@ -190,6 +257,25 @@ public class TarHeader {
             devMajor = _devmajor.asIntOctal();
             devMinor = _devminor.asIntOctal();
         }
+
+        if ( null == (typeFlag = TypeFlag.find( _typeflag.asByte() )) ) {
+            throw new InvalidHeaderException( "Unrecognized: " + _typeflag );
+        }
+        Action zAction = typeFlag.getAction();
+        if ( zAction.error() ) {
+            throw new RuntimeException( "Unable to process: " + this );
+        }
+        if ( zAction.report() ) {
+            System.out.println( "*** Report: " + this );
+        }
+    }
+
+    public TypeFlag getTypeFlag() {
+        return typeFlag;
+    }
+
+    public Action getAction() {
+        return (typeFlag != null) ? typeFlag.getAction() : Action.Error;
     }
 
     /**
@@ -212,45 +298,6 @@ public class TarHeader {
      */
     public String getName() {
         return name;
-    }
-
-    /**
-     * Parse an octal string from a header buffer. This is used for the
-     * file permission mode value.
-     *
-     * @param header The header buffer from which to parse.
-     * @param offset The offset into the buffer from which to parse.
-     * @param length The number of header bytes to parse.
-     *
-     * @return The long value of the octal string.
-     */
-    public static long parseOctal( byte[] header, int offset, int length )
-            throws InvalidHeaderException {
-        long result = 0;
-        boolean stillPadding = true;
-
-        int end = offset + length;
-        for ( int i = offset; i < end; ++i ) {
-            if ( header[i] == 0 ) {
-                break;
-            }
-
-            if ( header[i] == (byte) ' ' || header[i] == '0' ) {
-                if ( stillPadding ) {
-                    continue;
-                }
-
-                if ( header[i] == (byte) ' ' ) {
-                    break;
-                }
-            }
-
-            stillPadding = false;
-
-            result = (result << 3) + (header[i] - '0');
-        }
-
-        return result;
     }
 
     /**
@@ -458,44 +505,6 @@ public class TarHeader {
     private static final int PREFIXLEN = 155;
 
     /**
-     * LF_ constants represent the "link flag" of an entry, or more commonly,
-     * the "entry type". This is the "old way" of indicating a normal file.
-     */
-    public static final byte LF_OLDNORM = 0;
-    /**
-     * Normal file type.
-     */
-    public static final byte LF_NORMAL = (byte) '0';
-    /**
-     * Link file type.
-     */
-    public static final byte LF_LINK = (byte) '1';
-    /**
-     * Symbolic link file type.
-     */
-    public static final byte LF_SYMLINK = (byte) '2';
-    /**
-     * Character device file type.
-     */
-    public static final byte LF_CHR = (byte) '3';
-    /**
-     * Block device file type.
-     */
-    public static final byte LF_BLK = (byte) '4';
-    /**
-     * Directory file type.
-     */
-    public static final byte LF_DIR = (byte) '5';
-    /**
-     * FIFO (pipe) file type.
-     */
-    public static final byte LF_FIFO = (byte) '6';
-    /**
-     * Contiguous file type.
-     */
-    public static final byte LF_CONTIG = (byte) '7';
-
-    /**
      * Get this entry's file size.
      */
     public long getSize() {
@@ -508,7 +517,7 @@ public class TarHeader {
      * @return True if this entry is a directory.
      */
     public boolean isDirectory() {
-        return (linkFlag == TarHeader.LF_DIR) || getName().endsWith( "/" );
+        return getAction().isDirectory() || getName().endsWith( "/" );
     }
 
     /**
@@ -550,18 +559,20 @@ public class TarHeader {
     /**
      * Set this entry's modification time.
      */
-    public Date getModTime() {
-        return new Date( modTime * 1000 );
+    public Date getModificationTime() {
+        return new Date( modificationTime * 1000 );
     }
 
     public String toString() {
-        return "[name=" + getName() +
-               ", isDir=" + isDirectory() +
-               ", size=" + getSize() +
-               ", userId=" + getUserId() +
-               ", user=" + getUserName() +
-               ", groupId=" + getGroupId() +
-               ", group=" + getGroupName() + "]";
+        return "[" + format + "-" + typeFlag
+               + ", name=" + getName()
+               + ", isDir=" + isDirectory()
+               + ", size=" + getSize()
+               + ", userId=" + getUserId()
+               + ", user=" + getUserName()
+               + ", groupId=" + getGroupId()
+               + ", group=" + getGroupName()
+               + "]";
     }
 }
  

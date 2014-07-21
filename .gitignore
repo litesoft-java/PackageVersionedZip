@@ -2,3 +2,5 @@
 *.iws
 build
 out
+/jre-7u60-linux-x64.gz
+/google-gson-2.2.4-release.zip

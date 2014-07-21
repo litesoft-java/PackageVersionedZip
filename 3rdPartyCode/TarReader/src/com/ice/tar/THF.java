@@ -31,7 +31,7 @@ public class THF {
     }
 
     public int asIntOctal() {
-        if (mIntFromOctal != null) {
+        if ( mIntFromOctal != null ) {
             return mIntFromOctal;
         }
         return mIntFromOctal = (int) octal();
@@ -51,8 +51,11 @@ public class THF {
             if ( stillPadding && ((zByte == ' ') || (zByte == '0')) ) {
                 continue;
             }
-            if ( (zByte < '0') || ('7' < zByte) ) {
+            if ( zByte == 0 ) {
                 break;
+            }
+            if ( (zByte < '0') || ('7' < zByte) ) {
+                throw new RuntimeException( "Octal? " + this );
             }
             stillPadding = false;
             result = (result << 3) + (zByte - '0');
@@ -98,7 +101,7 @@ public class THF {
         String zAsString = asString();
         if ( zAsString == null ) {
             pSB.append( "null" );
-        } else if ((pMaxStringLength == -1) || (zAsString.length() <= pMaxStringLength)){
+        } else if ( (pMaxStringLength == -1) || (zAsString.length() <= pMaxStringLength) ) {
             pSB.append( "'" ).append( zAsString ).append( "'" );
         } else {
             pSB.append( "'" ).append( zAsString.substring( 0, pMaxStringLength ) ).append( "'..." );

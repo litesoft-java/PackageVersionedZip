@@ -48,9 +48,6 @@ public class TarGZRelativeFileIterator extends RelativeFileIterator {
         }
         try {
             int zAvailable = mTarInputStream.available();
-            if (zAvailable < 15) {
-                System.out.print("***");
-            }
             RelativeFile zRelativeFile = (zAvailable <= MAX_MEMORY_FILE_SIZE) ?
                                          new MemoryTarRelativeFile( mTarEntry.getName() ) :
                                          new TempFileTarRelativeFile( mTarEntry.getName() );

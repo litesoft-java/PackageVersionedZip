@@ -45,6 +45,8 @@ import java.io.*;
 @SuppressWarnings({"NullableProblems", "UnusedDeclaration"})
 public class TarInputStream
         extends FilterInputStream {
+    private static final long K32 = 32 * 2014;
+
     protected boolean debug;
     protected boolean hasHitEOF;
 
@@ -207,8 +209,60 @@ public class TarInputStream
      */
     public TarEntry getNextEntry()
             throws IOException {
+        TarEntry zEntry;
+        do {
+            if ( null != (zEntry = nextEntry()) ) {
+                if ( zEntry.getAction().extended() ) {
+                    zEntry = processExtended( zEntry );
+                }
+            }
+        } while ( (zEntry != null) && zEntry.getAction().ignore() );
+        return zEntry;
+    }
+
+    private TarEntry processExtended( TarEntry pEntry )
+            throws IOException {
+        if ( pEntry.getTypeFlag() == TarHeader.TypeFlag.GNU_LongName ) {
+            String zLongName = readAsStringMax32K( pEntry.getSize() );
+            TarEntry zEntry = nextEntry();
+            if ( zEntry != null ) {
+                zEntry.updateName( zLongName );
+            }
+            return zEntry;
+        }
+        System.out.println( "---- Extended ----> " + currEntry.getHeader() );
+        return pEntry;
+    }
+
+    private String readAsStringMax32K( long pSize )
+            throws IOException {
+        if ( pSize > K32 ) {
+            throw new IOException( "Expected String Size exceeded 32K: " + pSize );
+        }
+        byte[] zBytes = read( (int) pSize );
+        int zLength = zBytes.length;
+        if ( (zLength != 0) && (zBytes[zLength - 1] == 0) ) {
+            zLength--;
+        }
+        return (zLength == 0) ? "" : new String( zBytes, 0, zLength, THF.UTF_8 );
+    }
+
+    private byte[] read( int pSize )
+            throws IOException {
+        byte[] buf = new byte[pSize];
+        int zRead;
+        for ( int zOffset = 0; pSize > 0; zOffset += zRead, pSize -= zRead ) {
+            if ( -1 == (zRead = read( buf, zOffset, pSize )) ) {
+                throw new IOException( "Unexpected EOF" );
+            }
+        }
+        return buf;
+    }
+
+    private TarEntry nextEntry()
+            throws IOException {
         if ( hasHitEOF ) {
-            return null;
+            return currEntry = null;
         }
 
         if ( currEntry != null ) {
@@ -247,34 +301,30 @@ public class TarInputStream
         }
 
         if ( hasHitEOF ) {
-            currEntry = null;
-        } else {
-            try {
-                currEntry = new TarEntry( headerBuf );
-
-                if ( debug ) {
-                    System.err.println(
-                            "TarInputStream: SET CURRENTRY '"
-                            + currEntry.getName()
-                            + "' size = " + currEntry.getSize() );
-                }
-
-                entryOffset = 0;
-                entrySize = currEntry.getSize();
-            }
-            catch ( InvalidHeaderException ex ) {
-                entrySize = 0;
-                entryOffset = 0;
-                currEntry = null;
-                throw new InvalidHeaderException(
-                        "bad header in block "
-                        + buffer.getCurrentBlockNum()
-                        + " record "
-                        + buffer.getCurrentRecordNum(), ex );
-            }
+            return currEntry = null;
         }
+        entrySize = 0;
+        entryOffset = 0;
+        try {
+            currEntry = new TarEntry( headerBuf );
 
-        return currEntry;
+            if ( debug ) {
+                System.err.println(
+                        "TarInputStream: SET CURRENTRY '"
+                        + currEntry.getName()
+                        + "' size = " + currEntry.getSize() );
+            }
+            entrySize = currEntry.getSize();
+            return currEntry;
+        }
+        catch ( InvalidHeaderException ex ) {
+            currEntry = null;
+            throw new InvalidHeaderException(
+                    "bad header in block "
+                    + buffer.getCurrentBlockNum()
+                    + " record "
+                    + buffer.getCurrentRecordNum(), ex );
+        }
     }
 
     /**

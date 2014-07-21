@@ -35,63 +35,24 @@ import java.io.*;
 
 public class TarBuffer {
     public static final int DEFAULT_RCDSIZE = (512);
-    public static final int DEFAULT_BLKSIZE = (DEFAULT_RCDSIZE * 20);
+    public static final int DEFAULT_RECS_PER_BLOCK = 20;
+    public static final int DEFAULT_BLKSIZE = (DEFAULT_RCDSIZE * DEFAULT_RECS_PER_BLOCK);
+
+    private final int recordSize = DEFAULT_RCDSIZE;
+    private final int blockSize = DEFAULT_BLKSIZE;
+    private final int recsPerBlock = DEFAULT_RECS_PER_BLOCK;
+
+    private byte[] blockBuffer;
+    private int currBlkIdx = -1;
+    private int currRecIdx = recsPerBlock;
 
     private InputStream inStream;
 
-    private byte[] blockBuffer;
-    private int currBlkIdx;
-    private int currRecIdx;
-    private int blockSize;
-    private int recordSize;
-    private int recsPerBlock;
 
     private boolean debug;
 
     public TarBuffer( InputStream inStream ) {
-        this( inStream, TarBuffer.DEFAULT_BLKSIZE );
-    }
-
-    public TarBuffer( InputStream inStream, int blockSize ) {
-        this( inStream, blockSize, TarBuffer.DEFAULT_RCDSIZE );
-    }
-
-    public TarBuffer( InputStream inStream, int blockSize, int recordSize ) {
         this.inStream = inStream;
-        this.initialize( blockSize, recordSize );
-    }
-
-    /**
-     * Initialization common to all constructors.
-     */
-    private void initialize( int blockSize, int recordSize ) {
-        this.debug = false;
-        this.blockSize = blockSize;
-        this.recordSize = recordSize;
-        this.recsPerBlock = (this.blockSize / this.recordSize);
-        this.blockBuffer = new byte[this.blockSize];
-
-        if ( this.inStream != null ) {
-            this.currBlkIdx = -1;
-            this.currRecIdx = this.recsPerBlock;
-        } else {
-            this.currBlkIdx = 0;
-            this.currRecIdx = 0;
-        }
-    }
-
-    /**
-     * Get the TAR Buffer's block size. Blocks consist of multiple records.
-     */
-    public int getBlockSize() {
-        return this.blockSize;
-    }
-
-    /**
-     * Get the TAR Buffer's record size.
-     */
-    public int getRecordSize() {
-        return this.recordSize;
     }
 
     /**
@@ -104,13 +65,27 @@ public class TarBuffer {
     }
 
     /**
+     * Get the TAR Buffer's block size. Blocks consist of multiple records.
+     */
+    public int getBlockSize() {
+        return blockSize;
+    }
+
+    /**
+     * Get the TAR Buffer's record size.
+     */
+    public int getRecordSize() {
+        return recordSize;
+    }
+
+    /**
      * Determine if an archive record indicate End of Archive. End of
      * archive is indicated by a record that consists entirely of null bytes.
      *
      * @param record The record data to check.
      */
     public boolean isEOFRecord( byte[] record ) {
-        for ( int i = 0, sz = this.getRecordSize(); i < sz; ++i ) {
+        for ( int i = 0, sz = getRecordSize(); i < sz; ++i ) {
             if ( record[i] != 0 ) {
                 return false;
             }
@@ -120,61 +95,31 @@ public class TarBuffer {
     }
 
     /**
-     * Skip over a record on the input stream.
-     */
-
-    public void skipRecord()
-            throws IOException {
-        if ( this.debug ) {
-            System.err.println(
-                    "SkipRecord: recIdx = " + this.currRecIdx
-                    + " blkIdx = " + this.currBlkIdx );
-        }
-
-        if ( this.inStream == null ) {
-            throw new IOException( "reading (via skip) from an output buffer" );
-        }
-
-        if ( this.currRecIdx >= this.recsPerBlock ) {
-            if ( !this.readBlock() ) {
-                return; // UNDONE
-            }
-        }
-
-        this.currRecIdx++;
-    }
-
-    /**
      * Read a record from the input stream and return the data.
      *
      * @return The record data.
      */
-
     public byte[] readRecord()
             throws IOException {
-        if ( this.debug ) {
+        if ( debug ) {
             System.err.println(
-                    "ReadRecord: recIdx = " + this.currRecIdx
-                    + " blkIdx = " + this.currBlkIdx );
+                    "ReadRecord: recIdx = " + currRecIdx
+                    + " blkIdx = " + currBlkIdx );
         }
 
-        if ( this.inStream == null ) {
-            throw new IOException( "reading from an output buffer" );
-        }
-
-        if ( this.currRecIdx >= this.recsPerBlock ) {
-            if ( !this.readBlock() ) {
+        if ( (blockBuffer == null) || (recsPerBlock <= currRecIdx) ) {
+            if ( !readBlock() ) {
                 return null;
             }
         }
 
-        byte[] result = new byte[this.recordSize];
+        byte[] result = new byte[recordSize];
 
         System.arraycopy(
-                this.blockBuffer, (this.currRecIdx * this.recordSize),
-                result, 0, this.recordSize );
+                blockBuffer, (currRecIdx * recordSize),
+                result, 0, recordSize );
 
-        this.currRecIdx++;
+        currRecIdx++;
 
         return result;
     }
@@ -182,26 +127,21 @@ public class TarBuffer {
     /**
      * @return false if End-Of-File, else true
      */
-
     private boolean readBlock()
             throws IOException {
-        if ( this.debug ) {
-            System.err.println( "ReadBlock: blkIdx = " + this.currBlkIdx );
+        if ( debug ) {
+            System.err.println( "ReadBlock: blkIdx = " + currBlkIdx );
         }
 
-        if ( this.inStream == null ) {
-            throw new IOException( "reading from an output buffer" );
-        }
+        blockBuffer = new byte[blockSize]; // to Force all zeros!
+        int numBytes, offset = 0;
 
-        this.currRecIdx = 0;
+        for (int bytesNeeded = blockSize; bytesNeeded > 0; bytesNeeded -= numBytes) {
+            if ( -1 == (numBytes = inStream.read( blockBuffer, offset, bytesNeeded )) ) {
+                break;
+            }
+            offset += numBytes;
 
-        int offset = 0;
-        int bytesNeeded = this.blockSize;
-        for (; bytesNeeded > 0; ) {
-            long numBytes =
-                    this.inStream.read( this.blockBuffer, offset, bytesNeeded );
-
-            //
             // NOTE
             // We have fit EOF, and the block is not full!
             //
@@ -213,26 +153,12 @@ public class TarBuffer {
             // false in this case.
             //
             // Thanks to 'Yohann.Roussel@alcatel.fr' for this fix.
-            //
-
-            if ( numBytes == -1 ) {
-                break;
-            }
-
-            offset += numBytes;
-            bytesNeeded -= numBytes;
-            if ( numBytes != this.blockSize ) {
-                if ( this.debug ) {
-                    System.err.println(
-                            "ReadBlock: INCOMPLETE READ " + numBytes
-                            + " of " + this.blockSize + " bytes read." );
-                }
-            }
         }
 
-        this.currBlkIdx++;
+        currBlkIdx++;
+        currRecIdx = 0;
 
-        return true;
+        return (offset != 0);
     }
 
     /**
@@ -241,7 +167,7 @@ public class TarBuffer {
      * @return The current zero based block number.
      */
     public int getCurrentBlockNum() {
-        return this.currBlkIdx;
+        return currBlkIdx;
     }
 
     /**
@@ -251,7 +177,7 @@ public class TarBuffer {
      * @return The current zero based record number.
      */
     public int getCurrentRecordNum() {
-        return this.currRecIdx - 1;
+        return currRecIdx - 1;
     }
 
     /**
@@ -260,15 +186,14 @@ public class TarBuffer {
      */
     public void close()
             throws IOException {
-        if ( this.debug ) {
+        if ( debug ) {
             System.err.println( "TarBuffer.closeBuffer()." );
         }
 
-        if ( this.inStream != null ) {
-            if ( this.inStream != System.in ) {
-                this.inStream.close();
-                this.inStream = null;
-            }
+        if ( inStream != null ) {
+            Closeable zCloseable = inStream;
+            inStream = null;
+            zCloseable.close();
         }
     }
 }

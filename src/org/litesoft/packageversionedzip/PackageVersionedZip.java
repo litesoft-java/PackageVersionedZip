@@ -1,8 +1,11 @@
 package org.litesoft.packageversionedzip;
 
+import org.litesoft.commonfoundation.exceptions.*;
 import org.litesoft.commonfoundation.typeutils.*;
 import org.litesoft.server.file.*;
 import org.litesoft.server.util.*;
+
+import java8.util.function.*;
 
 import java.io.*;
 
@@ -51,9 +54,22 @@ public class PackageVersionedZip {
             // TODO: Open New File...
         }
 
-        public void add( RelativeFile pFile ) {
+        public void add( final RelativeFile pFile ) {
             System.out.println( "    " + pFile.getRelativeFilePath() );
-            // TODO: xxx Stream it in!
+//            IOCopier.from(new IOSupplier<InputStream>() {
+//                @Override
+//                public InputStream get() {
+//                    return pFile.open();
+//                }
+//            } ).to( new IOSupplier<OutputStream>() {
+//                @Override
+//                public OutputStream get()
+//                        throws IOException {
+//                    File zFile = new File("/tempGZ/" + pFile.getRelativeFilePath());
+//                    FileUtils.insureParent( zFile );
+//                    return new FileOutputStream( zFile );
+//                }
+//            } );
         }
 
         @Override

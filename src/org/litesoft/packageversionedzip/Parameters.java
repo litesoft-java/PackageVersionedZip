@@ -190,7 +190,7 @@ public class Parameters {
             case Zip:
                 return new ZipRelativeFileIterator( mSrcPath );
             case gz:
-                throw new UnsupportedOperationException( "No 'gz' Support Yet" );
+                return new TarGZRelativeFileIterator( mSrcPath );
             default:
                 throw new IllegalStateException( "Unexpected SourceType: " + mSourceType );
         }

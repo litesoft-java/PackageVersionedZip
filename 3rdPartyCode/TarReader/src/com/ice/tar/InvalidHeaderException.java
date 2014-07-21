@@ -21,15 +21,14 @@ import java.io.*;
  * This exception is used to indicate that there is a problem
  * with a TAR archive header.
  */
-
 public class InvalidHeaderException extends IOException {
-
-    public InvalidHeaderException() {
-        super();
-    }
 
     public InvalidHeaderException( String msg ) {
         super( msg );
+    }
+
+    public InvalidHeaderException( String message, Throwable cause ) {
+        super( message, cause );
     }
 }
 

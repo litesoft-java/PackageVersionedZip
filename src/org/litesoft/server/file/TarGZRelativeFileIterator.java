@@ -10,6 +10,11 @@ import java.io.*;
 import java.util.*;
 import java.util.zip.*;
 
+/**
+ * Convert the TAR entries into a RelativeFileIterator.
+ *
+ * TODO: Will need to process again for SymLinks!
+ */
 public class TarGZRelativeFileIterator extends RelativeFileIterator {
     public static final int MAX_MEMORY_FILE_SIZE = 1024 * 1024 * 1; // 1 MB
 

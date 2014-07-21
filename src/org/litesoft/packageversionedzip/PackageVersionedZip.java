@@ -5,9 +5,8 @@ import org.litesoft.commonfoundation.typeutils.*;
 import org.litesoft.server.file.*;
 import org.litesoft.server.util.*;
 
-import java8.util.function.*;
-
 import java.io.*;
+import java.util.zip.*;
 
 public class PackageVersionedZip {
     public static final String VERSION = "0.9";
@@ -47,35 +46,45 @@ public class PackageVersionedZip {
 
     private static class ZipFileCreator implements Closeable {
         private final File mZipFile;
-        // private final File mZipFile;
+        private ZipOutputStream mZipOutputStream;
 
         public ZipFileCreator( File pZipFile ) {
             System.out.println( "Producing: " + (mZipFile = pZipFile) );
-            // TODO: Open New File...
+            OutputStream zOS = FileUtils.asOutputStream( FileUtils.asNewFile( mZipFile ) );
+            mZipOutputStream = new ZipOutputStream( IOUtils.createBufferedOutputStream( zOS ) );
         }
 
         public void add( final RelativeFile pFile ) {
             System.out.println( "    " + pFile.getRelativeFilePath() );
-//            IOCopier.from(new IOSupplier<InputStream>() {
-//                @Override
-//                public InputStream get() {
-//                    return pFile.open();
-//                }
-//            } ).to( new IOSupplier<OutputStream>() {
-//                @Override
-//                public OutputStream get()
-//                        throws IOException {
-//                    File zFile = new File("/tempGZ/" + pFile.getRelativeFilePath());
-//                    FileUtils.insureParent( zFile );
-//                    return new FileOutputStream( zFile );
-//                }
-//            } );
+            ZipEntry zEntry = new ZipEntry( Paths.forwardSlash( pFile.getRelativeFilePath() ) );
+            try {
+                mZipOutputStream.putNextEntry( zEntry );
+            }
+            catch ( IOException e ) {
+                throw new FileSystemException( e );
+            }
+            IOCopier.from( new IOSupplier<InputStream>() {
+                @Override
+                public InputStream get() {
+                    return pFile.open();
+                }
+            } ).append( mZipOutputStream );
+            //    } ).to( new IOSupplier<OutputStream>() {
+            //        @Override
+            //        public OutputStream get()
+            //                throws IOException {
+            //            File zFile = new File("/tempGZ/" + pFile.getRelativeFilePath());
+            //            FileUtils.insureParent( zFile );
+            //            return new FileOutputStream( zFile );
+            //        }
+            //    } );
         }
 
         @Override
         public void close()
                 throws IOException {
-            // TODO: xxx
+            mZipOutputStream.close();
+            FileUtils.rollIn( FileUtils.asNewFile( mZipFile ), mZipFile, FileUtils.asBackupFile( mZipFile ) );
         }
     }
 }

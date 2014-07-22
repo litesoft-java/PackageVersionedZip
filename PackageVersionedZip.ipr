@@ -178,6 +178,7 @@
       <module fileurl="file://$PROJECT_DIR$/../LiteSoftCommonFoundation/LiteSoftCommonFoundation.iml" filepath="$PROJECT_DIR$/../LiteSoftCommonFoundation/LiteSoftCommonFoundation.iml" />
       <module fileurl="file://$PROJECT_DIR$/../LiteSoftServerUtils/LiteSoftServerUtils.iml" filepath="$PROJECT_DIR$/../LiteSoftServerUtils/LiteSoftServerUtils.iml" />
       <module fileurl="file://$PROJECT_DIR$/PackageVersionedZip.iml" filepath="$PROJECT_DIR$/PackageVersionedZip.iml" />
+      <module fileurl="file://$PROJECT_DIR$/../PackagedVersionCommon/PackagedVersionCommon.iml" filepath="$PROJECT_DIR$/../PackagedVersionCommon/PackagedVersionCommon.iml" />
     </modules>
   </component>
   <component name="ProjectRootManager" version="2" languageLevel="JDK_1_6" assert-keyword="true" jdk-15="true" project-jdk-name="1.7" project-jdk-type="JavaSDK">
@@ -187,6 +188,7 @@
     <mapping directory="" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/../LiteSoftCommonFoundation" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/../LiteSoftServerUtils" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/../PackagedVersionCommon" vcs="Git" />
   </component>
 </project>
 

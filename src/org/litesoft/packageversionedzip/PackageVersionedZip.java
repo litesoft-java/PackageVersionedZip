@@ -11,7 +11,6 @@ import java.util.zip.*;
 public class PackageVersionedZip {
     public static final String VERSION = "0.9";
 
-    public static final String VERSIONED_PATH = "versioned";
     public static final String VERSION_FILE = "version.txt";
 
     private Parameters mParameters;
@@ -33,8 +32,8 @@ public class PackageVersionedZip {
             throws IOException {
         String zTarget = mParameters.getTarget();
         String zVersion = mParameters.getVersion();
-        ZipFileCreator zZipper = new ZipFileCreator( new File( mParameters.getDestinationDir(),
-                                                               Paths.forwardSlashCombine( VERSIONED_PATH, zTarget, zVersion + ".zip" ) ) );
+        ZipFileCreator zZipper = new ZipFileCreator( new File( mParameters.getLocalVerDir(),
+                                                               Paths.forwardSlashCombine( zTarget, zVersion + ".zip" ) ) );
         zZipper.add( new RelativeFileFromContents( VERSION_FILE, zVersion + "\n" ) );
         RelativeFileIterator zSourceFiles = mParameters.getSourceFiles();
         while ( zSourceFiles.hasNext() ) {

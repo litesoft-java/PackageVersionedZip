@@ -12,7 +12,7 @@ import java.io.*;
  * Four Parameters are needed (Keys for the Arguments):
  * - Source ("From"/"Source") - Iterator of RelativeFile: RelativePath, open - Returns an InputStream
  * - Target ("Target") e.g. "jre"
- * - Version ("Version"), &
+ * - Version ("Version") - if the version is "!" (an Exclamation Point)
  * - LocalVerDir ("LocalVerDir") - See AbstractParameters for details.
  * <p/>
  * As each Argument key starts w/ a unique letter, the 'permutations' option is active.

@@ -1,7 +1,8 @@
 onejar: PackageVersionedZip
 
 dependencies:
-- ../LiteSoftServerUtils
+- 3rdPartyCode/TarReader
+- ../PackagedVersionCommon
 
 classpath:
 - 3rdPartyCode|**.jar

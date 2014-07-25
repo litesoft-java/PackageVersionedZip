@@ -22,8 +22,8 @@ import java.io.*;
 public class Parameters extends AbstractParameters {
     private ParameterTarget mTarget = new ParameterTarget();
     private ParameterVersion mVersion = new ParameterVersion();
-    private ParameterLocalVerDir mLocalVerDir = new ParameterLocalVerDir();
-    private ParameterSource mSource = new ParameterSource( mTarget, mVersion );
+    private ParameterLocalVerDir mLocalVerDir = ParameterLocalVerDir.existingOrCreatable();
+    private ParameterSource mSource = new ParameterSource( mTarget, mVersion ); // Source is actually 1st, but needs the others for the ".gz" magic!
 
     private Parameter<?>[] mParameters = {mSource, mTarget, mVersion, mLocalVerDir};
 

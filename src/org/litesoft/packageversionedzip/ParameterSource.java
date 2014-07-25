@@ -14,10 +14,11 @@ import java.io.*;
  * "jre" is the Target & "7u60" is the Version).
  */
 public class ParameterSource extends AbstractFileParameter {
-    public enum SourceType {Dir, Zip, gz}
-
     public static final String[] NAMES = {"Source", "From"};
-    public static final String INVALID = "MUST be an existing (or creatable) local directory";
+
+    private static final String INVALID = "MUST be an existing local: directory, zip file, or .gz (tar.gz assumed) file";
+
+    private enum SourceType {Dir, Zip, gz}
 
     private final ParameterTarget mTarget;
     private final ParameterVersion mVersion;
@@ -27,11 +28,6 @@ public class ParameterSource extends AbstractFileParameter {
         super( INVALID, NAMES );
         mTarget = pTarget;
         mVersion = pVersion;
-    }
-
-    @Override
-    public boolean acceptable( String pValue ) {
-        return Characters.is7BitAlphaNumeric( (ConstrainTo.notNull( pValue ) + "-").charAt( 0 ) );
     }
 
     @Override

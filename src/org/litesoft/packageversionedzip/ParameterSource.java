@@ -31,8 +31,8 @@ public class ParameterSource extends AbstractFileParameter {
     }
 
     @Override
-    protected File validateAndConvert( String pValue ) {
-        File zFile = super.validateAndConvert( pValue );
+    protected File convertValidated( String pValue ) {
+        File zFile = super.convertValidated( pValue );
         if ( zFile.isDirectory() ) {
             mSourceType = SourceType.Dir;
             return zFile;

@@ -24,7 +24,7 @@ public class PackageVersionedZip {
     public static void main( String[] args )
             throws Exception {
         System.out.println( "PackageVersionedZip vs " + VERSION );
-        new PackageVersionedZip( Parameters.from( new ArgsToMap( args ) ) ).process();
+        new PackageVersionedZip( new Parameters( new ArgsToMap( args ) ) ).process();
         System.out.println( "Done!" );
     }
 

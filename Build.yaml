@@ -1,4 +1,5 @@
 onejar: PackageVersionedZip
+main: org.litesoft.packageversionedzip.PackageVersionedZip
 
 dependencies:
 - 3rdPartyCode/TarReader

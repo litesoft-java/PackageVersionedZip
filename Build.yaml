@@ -1,6 +1,9 @@
 onejar: PackageVersionedZip
 main: org.litesoft.packageversionedzip.PackageVersionedZip
 
+resources: 
+- LICENSE
+
 dependencies:
 - 3rdPartyCode/TarReader
 - ../PackagedVersionCommon
@@ -8,7 +11,4 @@ dependencies:
 classpath:
 - 3rdPartyCode|**.jar
 - ../LiteSoftServerUtils/libs|**.jar
-
-resources: 
-- LICENSE
 

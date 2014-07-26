@@ -20,10 +20,8 @@ import java.io.*;
  * the parameters can be just the "Source" ".gz" file.
  */
 public class Parameters extends AbstractParameters {
-    private ParameterTarget mTarget = new ParameterTarget();
-    private ParameterVersion mVersion = new ParameterVersion();
+    private ParameterSource mSource = new ParameterSource( mTarget, mVersion );
     private ParameterLocalVerDir mLocalVerDir = ParameterLocalVerDir.existingOrCreatable();
-    private ParameterSource mSource = new ParameterSource( mTarget, mVersion ); // Source is actually 1st, but needs the others for the ".gz" magic!
 
     private Parameter<?>[] mParameters = {mSource, mTarget, mVersion, mLocalVerDir};
 
@@ -31,11 +29,8 @@ public class Parameters extends AbstractParameters {
     public static final String SOURCE2 = "Source";
 
     public Parameters( ArgsToMap pArgs ) {
+        prepToString( mTarget, mVersion );
         populate( mParameters, pArgs );
-    }
-
-    public final String getTarget() {
-        return mTarget.get();
     }
 
     public final String getVersion() {
@@ -46,8 +41,7 @@ public class Parameters extends AbstractParameters {
         return mLocalVerDir.get();
     }
 
-    public RelativeFileIterator getSourceFiles()
-            throws IOException {
+    public RelativeFileIterator getSourceFiles() {
         return mSource.getSourceFiles();
     }
 

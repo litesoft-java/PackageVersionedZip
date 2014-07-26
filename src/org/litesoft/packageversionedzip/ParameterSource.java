@@ -1,6 +1,7 @@
 package org.litesoft.packageversionedzip;
 
 import org.litesoft.commonfoundation.base.*;
+import org.litesoft.commonfoundation.exceptions.*;
 import org.litesoft.commonfoundation.typeutils.*;
 import org.litesoft.packageversioned.*;
 import org.litesoft.server.file.*;
@@ -68,20 +69,24 @@ public class ParameterSource extends AbstractFileParameter {
         }
     }
 
-    public RelativeFileIterator getSourceFiles()
-            throws IOException {
+    public RelativeFileIterator getSourceFiles() {
         if ( mSourceType == null ) {
             return null;
         }
-        switch ( mSourceType ) {
-            case Dir:
-                return new RecursiveRelativeFileIterator( mValue );
-            case Zip:
-                return new ZipRelativeFileIterator( mValue );
-            case gz:
-                return new TarGZRelativeFileIterator( mValue );
-            default:
-                throw new IllegalStateException( "Unexpected SourceType: " + mSourceType );
+        try {
+            switch ( mSourceType ) {
+                case Dir:
+                    return new RecursiveRelativeFileIterator( mValue );
+                case Zip:
+                    return new ZipRelativeFileIterator( mValue );
+                case gz:
+                    return new TarGZRelativeFileIterator( mValue );
+                default:
+                    throw new IllegalStateException( "Unexpected SourceType: " + mSourceType );
+            }
+        }
+        catch ( IOException e ) {
+            throw new WrappedIOException( e );
         }
     }
 }
